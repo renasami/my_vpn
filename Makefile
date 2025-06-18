@@ -30,6 +30,13 @@ help:
 	@echo "  make restore    - Restore from backup (interactive)"
 	@echo "  make list-backups - List available backups"
 	@echo ""
+	@echo "Network & Client Commands:"
+	@echo "  make setup-network - Setup network and firewall"
+	@echo "  make network-info  - Show network information"
+	@echo "  make create-client - Create VPN client config"
+	@echo "  make create-client-qr - Create client with QR code"
+	@echo "  make list-clients  - List existing clients"
+	@echo ""
 	@echo "Utility Commands:"
 	@echo "  make logs       - Show server logs"
 	@echo "  make deps       - Update dependencies"
@@ -120,6 +127,29 @@ list-backups:
 clean-backups:
 	@echo "💾 Cleaning Old Backups..."
 	./scripts/backup.sh --clean
+
+# Network and client management
+setup-network:
+	@echo "🌐 Setting up network configuration..."
+	sudo ./scripts/setup-network.sh
+
+network-info:
+	@echo "🌐 Showing network information..."
+	./scripts/setup-network.sh --info-only
+
+create-client:
+	@echo "📱 Creating VPN client..."
+	@read -p "Enter client name: " client_name; \
+	./scripts/generate-client.sh "$$client_name"
+
+create-client-qr:
+	@echo "📱 Creating VPN client with QR code..."
+	@read -p "Enter client name: " client_name; \
+	./scripts/generate-client.sh "$$client_name" --qr terminal
+
+list-clients:
+	@echo "📱 Listing VPN clients..."
+	./scripts/generate-client.sh --list
 
 # Utility commands
 logs:

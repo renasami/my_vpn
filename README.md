@@ -81,18 +81,49 @@ make backup          # バックアップ作成
 ## 使い方
 
 ### Web UIアクセス
-ブラウザで `http://localhost:8080` にアクセス
+```bash
+# ローカル
+http://localhost:8080
+
+# 外部アクセス（ルーター設定後）
+http://[パブリックIP]:8080
+```
 
 ### 初回セットアップ
-1. ユーザー登録画面でアカウントを作成
-2. ログイン後、ダッシュボードでサーバー状態を確認
-3. 「Clients」ページでVPNクライアントを管理
+1. **ネットワーク設定**: `sudo ./scripts/setup-network.sh`
+2. **サーバー起動**: `sudo make start`
+3. **ユーザー登録**: Web UIでアカウント作成
+4. **クライアント作成**: VPN接続用設定を生成
+
+### 他のPCからのVPN接続
+
+#### 1. 簡単なクライアント作成
+```bash
+# 対話的にクライアント作成
+./scripts/generate-client.sh MyLaptop
+
+# QRコード付きで作成（スマホ用）
+./scripts/generate-client.sh MyPhone --qr terminal
+./scripts/generate-client.sh MyPhone --qr png
+```
+
+#### 2. 各デバイスでの接続
+- **Windows**: WireGuardをインストール → 設定ファイルをインポート
+- **macOS**: App StoreのWireGuard → 設定ファイルをインポート  
+- **iOS/Android**: WireGuardアプリ → QRコードをスキャン
+- **Linux**: `sudo wg-quick up client.conf`
+
+#### 3. 外部ネットワークからの接続
+```bash
+# ルーター設定が必要（自動ガイド生成）
+sudo ./scripts/setup-network.sh
+```
 
 ### クライアント管理
-- **新規作成**: 「Create Client」ボタンでクライアント追加
-- **設定取得**: QRコードまたは設定ファイルをダウンロード
-- **状態管理**: クライアントの有効/無効切り替え
-- **接続監視**: 最終接続時刻・データ使用量の確認
+- **Web UI**: ブラウザで簡単管理
+- **CLI**: `./scripts/generate-client.sh --list`
+- **QRコード**: モバイルデバイス用
+- **設定ファイル**: PC・ルーター用
 
 ### API使用例
 ```bash
