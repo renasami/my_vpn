@@ -7,13 +7,10 @@ import {
   Button,
   Box,
   Typography,
-  ToggleButton,
-  ToggleButtonGroup,
   CircularProgress,
   Alert,
   Paper,
   IconButton,
-  Tooltip,
 } from '@suid/material';
 import {
   ContentCopy as CopyIcon,
@@ -58,52 +55,58 @@ const QRCodeModal: Component<QRCodeModalProps> = (props) => {
     fetchQRCode();
   };
 
-  const copyToClipboard = async () => {
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(qrData());
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      console.error('Failed to copy:', err);
     }
   };
 
-  const downloadQRCode = () => {
-    if (format() === 'png') {
-      // For PNG format, qrData should be a blob URL or base64
-      const link = document.createElement('a');
-      link.href = qrData().startsWith('data:') ? qrData() : `data:image/png;base64,${qrData()}`;
-      link.download = `${props.client.name}-qr.png`;
-      link.click();
-    } else {
-      // For base64 and terminal formats, save as text
-      const blob = new Blob([qrData()], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${props.client.name}-qr.${format() === 'terminal' ? 'txt' : 'b64'}`;
-      link.click();
-      URL.revokeObjectURL(url);
-    }
+  const handleDownload = () => {
+    const blob = new Blob([qrData()], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${props.client.name}-qr.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <Dialog open={props.open} onClose={props.onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        QR Code for {props.client.name}
-      </DialogTitle>
-      
+      <DialogTitle>QR Code for {props.client.name}</DialogTitle>
       <DialogContent>
-        <Box sx={{ mb: 3 }}>
-          <ToggleButtonGroup
-            value={format()}
-            exclusive
-            onChange={(_, value) => value && handleFormatChange(value)}
-            sx={{ mb: 2 }}
+        <Box sx={{ mb: 2 }}>
+          <Button
+            variant={format() === 'base64' ? 'contained' : 'outlined'}
+            onClick={() => handleFormatChange('base64')}
+            sx={{ mr: 1 }}
           >
-            <ToggleButton value="base64">Base64</ToggleButton>
-            <ToggleButton value="png">PNG Image</ToggleButton>
-            <ToggleButton value="terminal">Terminal</ToggleButton>
-          </ToggleButtonGroup>
+            Base64
+          </Button>
+          <Button
+            variant={format() === 'png' ? 'contained' : 'outlined'}
+            onClick={() => handleFormatChange('png')}
+            sx={{ mr: 1 }}
+          >
+            PNG Image
+          </Button>
+          <Button
+            variant={format() === 'terminal' ? 'contained' : 'outlined'}
+            onClick={() => handleFormatChange('terminal')}
+          >
+            Terminal
+          </Button>
         </Box>
+
+        <Show when={loading()}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <CircularProgress />
+          </Box>
+        </Show>
 
         <Show when={error()}>
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -111,88 +114,46 @@ const QRCodeModal: Component<QRCodeModalProps> = (props) => {
           </Alert>
         </Show>
 
-        <Show when={loading()}>
-          <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
-          </Box>
-        </Show>
-
-        <Show when={!loading() && qrData()}>
-          <Paper variant="outlined" sx={{ p: 2, position: 'relative' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="subtitle2">
-                {format() === 'png' ? 'QR Code Image' : 
-                 format() === 'base64' ? 'Base64 Encoded' : 
-                 'Terminal Display'}
+        <Show when={!loading() && !error() && qrData()}>
+          <Paper sx={{ p: 2, mb: 2 }}>
+            <Show when={format() === 'base64'}>
+              <Typography variant="h6" gutterBottom>
+                Base64 Encoded
               </Typography>
-              <Box>
-                <Tooltip title="Copy to clipboard">
-                  <IconButton size="small" onClick={copyToClipboard}>
-                    <CopyIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Download">
-                  <IconButton size="small" onClick={downloadQRCode}>
-                    <DownloadIcon />
-                  </IconButton>
-                </Tooltip>
+              <Box sx={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                {qrData()}
               </Box>
-            </Box>
+            </Show>
 
             <Show when={format() === 'png'}>
-              <Box display="flex" justifyContent="center" p={2}>
-                <img 
-                  src={qrData().startsWith('data:') ? qrData() : `data:image/png;base64,${qrData()}`}
-                  alt="QR Code"
-                  style={{ "max-width": "300px", "max-height": "300px" }}
-                />
-              </Box>
+              <Typography variant="h6" gutterBottom>
+                QR Code Image
+              </Typography>
+              <img src={qrData()} alt="QR Code" style={{ 'max-width': '100%' }} />
             </Show>
 
             <Show when={format() === 'terminal'}>
-              <Box
-                component="pre"
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.5rem',
-                  lineHeight: '0.5rem',
-                  overflow: 'auto',
-                  backgroundColor: 'black',
-                  color: 'white',
-                  p: 1,
-                  borderRadius: 1,
-                  maxHeight: '400px',
-                }}
-              >
-                {qrData()}
+              <Typography variant="h6" gutterBottom>
+                Terminal Display
+              </Typography>
+              <Box sx={{ fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1 }}>
+                <pre>{qrData()}</pre>
               </Box>
             </Show>
 
-            <Show when={format() === 'base64'}>
-              <Box
-                component="pre"
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.75rem',
-                  overflow: 'auto',
-                  backgroundColor: '#f5f5f5',
-                  p: 1,
-                  borderRadius: 1,
-                  maxHeight: '200px',
-                  wordBreak: 'break-all',
-                }}
-              >
-                {qrData()}
-              </Box>
-            </Show>
+            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+              <IconButton onClick={handleCopy} aria-label="Copy to clipboard">
+                <CopyIcon />
+              </IconButton>
+              <IconButton onClick={handleDownload} aria-label="Download">
+                <DownloadIcon />
+              </IconButton>
+            </Box>
           </Paper>
         </Show>
       </DialogContent>
-
       <DialogActions>
-        <Button onClick={props.onClose}>
-          Close
-        </Button>
+        <Button onClick={props.onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

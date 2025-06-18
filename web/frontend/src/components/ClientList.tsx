@@ -7,46 +7,36 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   IconButton,
   Chip,
   TextField,
   Box,
-  Tooltip,
-  TableSortLabel,
+  Button,
 } from '@suid/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   QrCode as QrCodeIcon,
-  Download as DownloadIcon,
-  PowerSettingsNew as PowerIcon,
 } from '@suid/icons-material';
-import { 
-  clientsState, 
-  paginatedClients, 
-  totalPages,
-  setSearchTerm,
-  setSorting,
-  setPage,
-  setPageSize,
-} from '@/stores/clients';
 import type { Client } from '@/services/clients';
 
 interface ClientListProps {
+  clients: Client[];
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  sortBy: keyof Client;
+  sortOrder: 'asc' | 'desc';
+  onSort: (column: keyof Client) => void;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rows: number) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
-  onToggle: (client: Client) => void;
-  onQRCode: (client: Client) => void;
-  onDownload: (client: Client) => void;
-  disabled?: boolean;
+  onShowQR: (client: Client) => void;
 }
 
 const ClientList: Component<ClientListProps> = (props) => {
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleString();
-  };
-
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -55,154 +45,74 @@ const ClientList: Component<ClientListProps> = (props) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getLastHandshakeStatus = (lastHandshake?: string) => {
-    if (!lastHandshake) return 'never';
-    
-    const diff = Date.now() - new Date(lastHandshake).getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 5) return 'active';
-    if (minutes < 30) return 'recent';
-    return 'inactive';
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getStatusColor = (enabled: boolean) => {
+    return enabled ? 'success' : 'default';
   };
 
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+    <Paper>
       <Box sx={{ p: 2 }}>
         <TextField
-          fullWidth
+          label="Search clients..."
           variant="outlined"
-          placeholder="Search by name or IP address..."
-          value={clientsState.searchTerm}
-          onChange={(e) => setSearchTerm(e.currentTarget.value)}
+          size="small"
+          value={props.searchTerm}
+          onChange={(e) => props.onSearchChange(e.target.value)}
+          sx={{ mb: 2 }}
         />
       </Box>
-
-      <TableContainer sx={{ maxHeight: 600 }}>
-        <Table stickyHeader>
+      
+      <TableContainer>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell>
-                <TableSortLabel
-                  active={clientsState.sortBy === 'name'}
-                  direction={clientsState.sortBy === 'name' ? clientsState.sortOrder : 'asc'}
-                  onClick={() => setSorting('name')}
-                >
+                <Button onClick={() => props.onSort('name')}>
                   Name
-                </TableSortLabel>
+                </Button>
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={clientsState.sortBy === 'ip'}
-                  direction={clientsState.sortBy === 'ip' ? clientsState.sortOrder : 'asc'}
-                  onClick={() => setSorting('ip')}
-                >
-                  IP Address
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={clientsState.sortBy === 'status'}
-                  direction={clientsState.sortBy === 'status' ? clientsState.sortOrder : 'asc'}
-                  onClick={() => setSorting('status')}
-                >
-                  Status
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={clientsState.sortBy === 'lastHandshake'}
-                  direction={clientsState.sortBy === 'lastHandshake' ? clientsState.sortOrder : 'asc'}
-                  onClick={() => setSorting('lastHandshake')}
-                >
-                  Last Handshake
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Data Transfer</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell>IP Address</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Last Handshake</TableCell>
+              <TableCell>Data Sent</TableCell>
+              <TableCell>Data Received</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            <For each={paginatedClients()}>
+            <For each={props.clients}>
               {(client) => (
-                <TableRow hover>
+                <TableRow>
                   <TableCell>{client.name}</TableCell>
                   <TableCell>{client.ip_address}</TableCell>
                   <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Chip
-                        label={client.enabled ? 'Enabled' : 'Disabled'}
-                        color={client.enabled ? 'success' : 'default'}
-                        size="small"
-                      />
-                      <Show when={client.enabled && client.last_handshake}>
-                        <Chip
-                          label={getLastHandshakeStatus(client.last_handshake)}
-                          color={
-                            getLastHandshakeStatus(client.last_handshake) === 'active' ? 'success' :
-                            getLastHandshakeStatus(client.last_handshake) === 'recent' ? 'warning' :
-                            'error'
-                          }
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Show>
-                    </Box>
+                    <Chip
+                      label={client.enabled ? 'Active' : 'Inactive'}
+                      color={getStatusColor(client.enabled)}
+                      size="small"
+                    />
                   </TableCell>
                   <TableCell>
-                    {client.last_handshake ? formatDate(client.last_handshake) : 'Never'}
+                    <Show when={client.last_handshake} fallback="Never">
+                      {formatDate(client.last_handshake!)}
+                    </Show>
                   </TableCell>
+                  <TableCell>{formatBytes(client.bytes_sent || 0)}</TableCell>
+                  <TableCell>{formatBytes(client.bytes_received || 0)}</TableCell>
                   <TableCell>
-                    ↓ {formatBytes(client.bytes_received)} / ↑ {formatBytes(client.bytes_sent)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title={client.enabled ? 'Disable' : 'Enable'}>
-                      <IconButton
-                        size="small"
-                        onClick={() => props.onToggle(client)}
-                        disabled={props.disabled}
-                        color={client.enabled ? 'success' : 'default'}
-                      >
-                        <PowerIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        onClick={() => props.onEdit(client)}
-                        disabled={props.disabled}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="QR Code">
-                      <IconButton
-                        size="small"
-                        onClick={() => props.onQRCode(client)}
-                        disabled={props.disabled}
-                      >
-                        <QrCodeIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Download Config">
-                      <IconButton
-                        size="small"
-                        onClick={() => props.onDownload(client)}
-                        disabled={props.disabled}
-                      >
-                        <DownloadIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        onClick={() => props.onDelete(client)}
-                        disabled={props.disabled}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <IconButton onClick={() => props.onEdit(client)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => props.onDelete(client)}>
+                      <DeleteIcon />
+                    </IconButton>
+                    <IconButton onClick={() => props.onShowQR(client)}>
+                      <QrCodeIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               )}
@@ -210,16 +120,25 @@ const ClientList: Component<ClientListProps> = (props) => {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        component="div"
-        count={clientsState.clients.length}
-        rowsPerPage={clientsState.pageSize}
-        page={clientsState.currentPage - 1}
-        onPageChange={(event, newPage) => setPage(newPage + 1)}
-        onRowsPerPageChange={(event) => setPageSize(parseInt(event.target.value, 10))}
-      />
+      
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          Showing {props.clients.length} clients
+        </div>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button 
+            disabled={props.page === 0}
+            onClick={() => props.onPageChange(props.page - 1)}
+          >
+            Previous
+          </Button>
+          <Button 
+            onClick={() => props.onPageChange(props.page + 1)}
+          >
+            Next
+          </Button>
+        </Box>
+      </Box>
     </Paper>
   );
 };

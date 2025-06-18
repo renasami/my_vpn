@@ -18,29 +18,64 @@ M1 MacBook Pro 16GBでWireGuard VPNサーバーを構築・管理するための
 - WireGuard Tools (`brew install wireguard-tools`)
 - Node.js 18+ (Web UI用)
 
-## インストールと起動
+## クイックスタート
 
-### 1. WireGuard Toolsのインストール
+### 自動インストール（推奨）
 ```bash
+# 全自動インストール
+./scripts/install.sh
+
+# 最小構成インストール（Node.js除く）
+./scripts/install.sh --minimal
+```
+
+### 手動インストール
+```bash
+# 1. WireGuard Toolsのインストール
 brew install wireguard-tools
-```
 
-### 2. プロジェクトのビルド
-```bash
+# 2. プロジェクトのビルド
 go mod tidy
-go build -o vpn-server ./cmd/main.go
-```
+go build -o vpn-server ./cmd/server/main.go
 
-### 3. Web UIの準備
-```bash
+# 3. Web UIの準備（オプション）
 cd web/frontend
 npm install
 npm run build
+cd ..
+
+# 4. サーバー起動
+sudo ./scripts/start.sh
 ```
 
-### 4. サーバー起動
+## スクリプトによる管理
+
+### サーバー管理
 ```bash
-sudo ./vpn-server
+# 起動
+sudo ./scripts/start.sh          # 通常起動
+sudo ./scripts/start.sh --dev    # 開発モード（ホットリロード）
+sudo ./scripts/start.sh --prod   # プロダクションモード（バックグラウンド）
+
+# 停止
+./scripts/stop.sh                # 通常停止
+./scripts/stop.sh --force        # 強制停止
+
+# 状態確認
+./scripts/status.sh              # 詳細状態
+./scripts/status.sh --simple     # 簡易状態
+./scripts/status.sh --logs       # ログのみ表示
+```
+
+### Makeコマンド（推奨）
+```bash
+make help            # 利用可能なコマンド一覧
+make install         # 自動インストール
+make start           # サーバー起動
+make stop            # サーバー停止
+make status          # 状態確認
+make test            # テスト実行
+make backup          # バックアップ作成
 ```
 
 ## 使い方
