@@ -1,0 +1,96 @@
+# Binaries
+vpn-server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+
+# Configuration files with sensitive data
+config.json
+.env
+.env.local
+.env.production
+
+# Temporary files
+tmp/
+temp/
+.tmp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node.js (Frontend)
+web/frontend/node_modules/
+web/frontend/.npm
+web/frontend/dist/
+web/frontend/build/
+web/frontend/.vite/
+
+# Dependencies
+vendor/
+
+# Test coverage
+coverage.txt
+coverage.html
+coverage.out
+
+# Build artifacts
+web/static/
+!web/static/.gitkeep
+
+# WireGuard keys and configs
+*.key
+*.conf
+wg0.conf
+server.key
+server.pub
+
+# Certificates
+*.pem
+*.crt
+*.key
+*.p12
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
